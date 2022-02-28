@@ -1,0 +1,57 @@
+import snscrape.modules.twitter as sntwitter
+import csv
+
+tweetids_list1 = []
+tweettext_list1 = []
+tweetuser1=[]
+tweetids_list2 = []
+tweettext_list2 = []
+tweetuser2=[]
+tweetretweetedori = []
+tweetretweetedoriUser=[]
+maxTweets = 30000
+start_date = '2020-11-01'
+end_date = '2021-01-06'
+keyword = ['stoptheseal', 
+           'sharpiegate', 
+           'riggedelection', 
+           'electionfraud', 
+           'electionmeddling',
+          'qanon']
+#, 'trump2020', 'kag2020', 'kag', 'maga2020', 'MAGA','trump', 'americafirst', '', 'wwg1wga', 'NeverBiden','Storm', 'Sleepy joe', 'Raid','CreepyJoeBiden','Riot', 'Terrorists','','Insurrection']
+#'trump2020landslide'
+#'Trumpsters'
+#Open/create a file to append data to
+csvFile1 = open('Tweet_List_original.csv', 'a', newline='', encoding='utf8')
+csvFile2 = open('Tweet_List_with_Retweets.csv', 'a', newline='', encoding='utf8')
+#Use csv writer
+csvWriter1 = csv.writer(csvFile1)
+csvWriter1.writerow(['Tweet id','Tweet date','User Name', 'tweet text', 'RetweetCount', 'Tweet likeCount', 'tweet.retweetedTweet']) 
+csvWriter2 = csv.writer(csvFile2)
+csvWriter2.writerow(['Tweet id','Tweet date','User Name', 'tweet text', 'RetweetCount', 'Tweet likeCount', 'tweet.retweetedTweetID', 'Username_of_Original Tweet']) 
+
+
+for j in keyword:
+    print (j)   
+    for i,tweet in enumerate(sntwitter.TwitterSearchScraper(f'{j} + since:{start_date} until:{end_date} -filter:links -filter:replies -filter:retweets').get_items()):   
+        if i > maxTweets:  
+            #or filter:nativeretweets
+            break  
+        if (tweet.id not in tweetids_list1)and (tweet.retweetCount>10 or tweet.likeCount>10): 
+            tweetids_list1.append(tweet.id)
+            tweettext_list1.append(tweet.content)
+            tweetuser1.append(tweet.user.username)
+            csvWriter1.writerow([tweet.id, tweet.date, tweet.user.username, tweet.content, tweet.retweetCount, tweet.likeCount, tweet.retweetedTweet])
+    for k,tweet in enumerate(sntwitter.TwitterSearchScraper(f'{j} + since:{start_date} until:{end_date} include:nativeretweets -filter:links -filter:replies').get_items()):   
+        if k > maxTweets: 
+            break  
+        if (tweet.id not in tweetids_list2): 
+            for m in range (0, len(tweettext_list1)):
+                if (tweet.content == tweettext_list1[m] and tweet.id!=tweetids_list1[m]):
+                    tweetids_list2.append(tweet.id)
+                    tweettext_list2.append(tweet.content)
+                    tweetretweetedori.append(tweetids_list1[m])
+                    tweetretweetedoriUser.append(tweetuser1[m])
+                    csvWriter2.writerow([tweet.id, tweet.date, tweet.user.username, tweet.content, tweet.retweetCount, tweet.likeCount, tweetids_list1[m], tweetuser1[m]])
+csvFile1.close()
+csvFile2.close()
